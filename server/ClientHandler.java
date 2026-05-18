@@ -1,7 +1,7 @@
 package server;
 
 import common.*;
-import model.*;
+import common.model.*;
 
 import java.io.*;
 import java.net.Socket;

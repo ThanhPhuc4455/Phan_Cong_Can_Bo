@@ -1,7 +1,7 @@
 package common;
 
-import model.CanBo;
-import model.PhongThi;
+import common.model.CanBo;
+import common.model.PhongThi;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 

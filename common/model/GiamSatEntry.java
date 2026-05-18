@@ -1,5 +1,4 @@
-package model;
-
+package common.model;
 /**
  * Model: Một dòng trong bảng phân công giám sát hành lang
  */
