@@ -1,5 +1,4 @@
-package model;
-
+package common.model;
 import java.io.Serializable;
 
 /**

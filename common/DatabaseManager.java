@@ -1,99 +1,88 @@
 package common;
 
-import model.CanBo;
-import model.GiamSatEntry;
-import model.PhanCongEntry;
-import model.PhongThi;
+import common.model.CanBo;
+import common.model.GiamSatEntry;
+import common.model.PhanCongEntry;
+import common.model.PhongThi;
 
 import java.sql.*;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Quản lý cơ sở dữ l
- * iệu SQLite.
+ * Quản lý cơ sở dữ liệu MySQL.
  *
- * Schema:
- *   can_bo      - Danh sách cán bộ coi thi
- *   phong_thi   - Danh sách phòng thi
- *   phan_cong   - Kết quả phân công giám thị (theo ca)
- *   giam_sat    - Kết quả phân công giám sát (theo ca)
- *   room_history- Lịch sử: phòng nào đã có cán bộ nào (để tránh trùng)
- *   pair_history- Lịch sử: cặp (GV1,GV2) đã từng cùng coi một phòng
+ * ⚠️ Đổi thông tin kết nối bên dưới cho khớp với MySQL của bạn.
  */
 public class DatabaseManager {
 
-    private static final String DB_URL = "jdbc:sqlite:exam_proctor.db";
+    // ===================================================
+    //  ⚙️  THAY ĐỔI THÔNG TIN KẾT NỐI MySQL Ở ĐÂY
+    // ===================================================
+    private static final String DB_HOST = "localhost";
+    private static final String DB_PORT = "3306";
+    private static final String DB_NAME = "exam_proctor";
+    private static final String DB_USER = "root";
+    private static final String DB_PASS = "123456";  // ← MẬT KHẨU CỦA BẠN
+    // ===================================================
+
+    private static final String DB_URL =
+        "jdbc:mysql://" + DB_HOST + ":" + DB_PORT + "/" + DB_NAME
+        + "?useSSL=false&allowPublicKeyRetrieval=true"
+        + "&serverTimezone=Asia/Ho_Chi_Minh&characterEncoding=UTF-8";
+
     private Connection conn;
 
     public DatabaseManager() throws SQLException {
-        conn = DriverManager.getConnection(DB_URL);
+        // Tạo database nếu chưa tồn tại
+        String urlNoDB = "jdbc:mysql://" + DB_HOST + ":" + DB_PORT
+            + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh";
+        try (Connection tmp = DriverManager.getConnection(urlNoDB, DB_USER, DB_PASS);
+             Statement st = tmp.createStatement()) {
+            st.executeUpdate("CREATE DATABASE IF NOT EXISTS `" + DB_NAME
+                + "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        }
+        conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
         conn.setAutoCommit(false);
         createTables();
     }
-
-    // ===== Khởi tạo bảng =====
 
     public void createTables() throws SQLException {
         try (Statement st = conn.createStatement()) {
             st.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS can_bo (" +
-                "  id        INTEGER PRIMARY KEY AUTOINCREMENT," +
-                "  stt       INTEGER," +
-                "  ma_cb     TEXT UNIQUE," +
-                "  ho_ten    TEXT," +
-                "  ngay_sinh TEXT," +
-                "  don_vi    TEXT" +
-                ")"
-            );
+                "  id INT AUTO_INCREMENT PRIMARY KEY," +
+                "  stt INT, ma_cb VARCHAR(50) UNIQUE," +
+                "  ho_ten VARCHAR(200), ngay_sinh VARCHAR(20), don_vi VARCHAR(200)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
             st.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS phong_thi (" +
-                "  id        INTEGER PRIMARY KEY AUTOINCREMENT," +
-                "  stt       INTEGER," +
-                "  ten_phong TEXT UNIQUE," +
-                "  dia_diem  TEXT" +
-                ")"
-            );
+                "  id INT AUTO_INCREMENT PRIMARY KEY," +
+                "  stt INT, ten_phong VARCHAR(50) UNIQUE, dia_diem VARCHAR(200)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
             st.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS phan_cong (" +
-                "  id       INTEGER PRIMARY KEY AUTOINCREMENT," +
-                "  ca_thi   INTEGER," +
-                "  stt      INTEGER," +
-                "  ma_cb    TEXT," +
-                "  ho_ten   TEXT," +
-                "  vai_tro  TEXT," +
-                "  phong    TEXT" +
-                ")"
-            );
+                "  id INT AUTO_INCREMENT PRIMARY KEY," +
+                "  ca_thi INT, stt INT, ma_cb VARCHAR(50)," +
+                "  ho_ten VARCHAR(200), vai_tro VARCHAR(50), phong VARCHAR(50)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
             st.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS giam_sat (" +
-                "  id       INTEGER PRIMARY KEY AUTOINCREMENT," +
-                "  ca_thi   INTEGER," +
-                "  stt      INTEGER," +
-                "  ma_cb    TEXT," +
-                "  ho_ten   TEXT," +
-                "  khu_vuc  TEXT" +
-                ")"
-            );
-            // Lịch sử: phòng thi → set các cán bộ đã coi (mọi ca)
+                "  id INT AUTO_INCREMENT PRIMARY KEY," +
+                "  ca_thi INT, stt INT, ma_cb VARCHAR(50)," +
+                "  ho_ten VARCHAR(200), khu_vuc VARCHAR(200)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
             st.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS room_history (" +
-                "  phong    TEXT," +
-                "  ma_cb    TEXT," +
+                "  phong VARCHAR(50), ma_cb VARCHAR(50)," +
                 "  PRIMARY KEY (phong, ma_cb)" +
-                ")"
-            );
-            // Lịch sử: cặp giám thị đã từng cùng phòng
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
             st.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS pair_history (" +
-                "  pair_key TEXT PRIMARY KEY" + // "MA1|MA2" (đã sắp xếp alphabet)
-                ")"
-            );
+                "  pair_key VARCHAR(120) PRIMARY KEY" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
             conn.commit();
         }
     }
-
-    // ===== Xóa dữ liệu cũ =====
 
     public void clearAllData() throws SQLException {
         try (Statement st = conn.createStatement()) {
@@ -117,21 +106,14 @@ public class DatabaseManager {
         }
     }
 
-    // ===== Lưu dữ liệu =====
-
     public void saveCanBoList(List<CanBo> list) throws SQLException {
-        try (Statement st = conn.createStatement()) {
-            st.executeUpdate("DELETE FROM can_bo");
-        }
-        String sql = "INSERT OR IGNORE INTO can_bo(stt, ma_cb, ho_ten, ngay_sinh, don_vi) VALUES(?,?,?,?,?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Statement st = conn.createStatement()) { st.executeUpdate("DELETE FROM can_bo"); }
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT IGNORE INTO can_bo(stt,ma_cb,ho_ten,ngay_sinh,don_vi) VALUES(?,?,?,?,?)")) {
             for (CanBo cb : list) {
-                ps.setInt   (1, cb.getStt());
-                ps.setString(2, cb.getMaCB());
-                ps.setString(3, cb.getHoTen());
-                ps.setString(4, cb.getNgaySinh());
-                ps.setString(5, cb.getDonVi());
-                ps.addBatch();
+                ps.setInt(1, cb.getStt()); ps.setString(2, cb.getMaCB());
+                ps.setString(3, cb.getHoTen()); ps.setString(4, cb.getNgaySinh());
+                ps.setString(5, cb.getDonVi()); ps.addBatch();
             }
             ps.executeBatch();
         }
@@ -139,16 +121,12 @@ public class DatabaseManager {
     }
 
     public void savePhongThiList(List<PhongThi> list) throws SQLException {
-        try (Statement st = conn.createStatement()) {
-            st.executeUpdate("DELETE FROM phong_thi");
-        }
-        String sql = "INSERT OR IGNORE INTO phong_thi(stt, ten_phong, dia_diem) VALUES(?,?,?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Statement st = conn.createStatement()) { st.executeUpdate("DELETE FROM phong_thi"); }
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT IGNORE INTO phong_thi(stt,ten_phong,dia_diem) VALUES(?,?,?)")) {
             for (PhongThi p : list) {
-                ps.setInt   (1, p.getStt());
-                ps.setString(2, p.getTenPhong());
-                ps.setString(3, p.getDiaDiem());
-                ps.addBatch();
+                ps.setInt(1, p.getStt()); ps.setString(2, p.getTenPhong());
+                ps.setString(3, p.getDiaDiem()); ps.addBatch();
             }
             ps.executeBatch();
         }
@@ -156,19 +134,16 @@ public class DatabaseManager {
     }
 
     public void savePhanCong(int caThi, List<PhanCongEntry> list) throws SQLException {
-        // Xóa ca cũ (nếu có)
-        try (PreparedStatement ps = conn.prepareStatement("DELETE FROM phan_cong WHERE ca_thi=?")) {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "DELETE FROM phan_cong WHERE ca_thi=?")) {
             ps.setInt(1, caThi); ps.executeUpdate();
         }
-        String sql = "INSERT INTO phan_cong(ca_thi, stt, ma_cb, ho_ten, vai_tro, phong) VALUES(?,?,?,?,?,?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT INTO phan_cong(ca_thi,stt,ma_cb,ho_ten,vai_tro,phong) VALUES(?,?,?,?,?,?)")) {
             for (PhanCongEntry e : list) {
-                ps.setInt   (1, caThi);
-                ps.setInt   (2, e.getStt());
-                ps.setString(3, e.getMaCB());
-                ps.setString(4, e.getHoTen());
-                ps.setString(5, e.getVaiTro());
-                ps.setString(6, e.getPhongThi());
+                ps.setInt(1, caThi); ps.setInt(2, e.getStt());
+                ps.setString(3, e.getMaCB()); ps.setString(4, e.getHoTen());
+                ps.setString(5, e.getVaiTro()); ps.setString(6, e.getPhongThi());
                 ps.addBatch();
             }
             ps.executeBatch();
@@ -177,28 +152,25 @@ public class DatabaseManager {
     }
 
     public void saveGiamSat(int caThi, List<GiamSatEntry> list) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement("DELETE FROM giam_sat WHERE ca_thi=?")) {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "DELETE FROM giam_sat WHERE ca_thi=?")) {
             ps.setInt(1, caThi); ps.executeUpdate();
         }
-        String sql = "INSERT INTO giam_sat(ca_thi, stt, ma_cb, ho_ten, khu_vuc) VALUES(?,?,?,?,?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT INTO giam_sat(ca_thi,stt,ma_cb,ho_ten,khu_vuc) VALUES(?,?,?,?,?)")) {
             for (GiamSatEntry e : list) {
-                ps.setInt   (1, caThi);
-                ps.setInt   (2, e.getStt());
-                ps.setString(3, e.getMaCB());
-                ps.setString(4, e.getHoTen());
-                ps.setString(5, e.getKhuVuc());
-                ps.addBatch();
+                ps.setInt(1, caThi); ps.setInt(2, e.getStt());
+                ps.setString(3, e.getMaCB()); ps.setString(4, e.getHoTen());
+                ps.setString(5, e.getKhuVuc()); ps.addBatch();
             }
             ps.executeBatch();
         }
         conn.commit();
     }
 
-    /** Cập nhật lịch sử phòng: phòng → cán bộ đã coi */
     public void updateRoomHistory(String phong, String maCB1, String maCB2) throws SQLException {
-        String sql = "INSERT OR IGNORE INTO room_history(phong, ma_cb) VALUES(?,?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT IGNORE INTO room_history(phong,ma_cb) VALUES(?,?)")) {
             ps.setString(1, phong); ps.setString(2, maCB1); ps.addBatch();
             ps.setString(1, phong); ps.setString(2, maCB2); ps.addBatch();
             ps.executeBatch();
@@ -206,44 +178,34 @@ public class DatabaseManager {
         conn.commit();
     }
 
-    /** Cập nhật lịch sử cặp */
     public void updatePairHistory(String key) throws SQLException {
-        String sql = "INSERT OR IGNORE INTO pair_history(pair_key) VALUES(?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, key);
-            ps.executeUpdate();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT IGNORE INTO pair_history(pair_key) VALUES(?)")) {
+            ps.setString(1, key); ps.executeUpdate();
         }
         conn.commit();
     }
 
-    // ===== Đọc lịch sử =====
-
-    /** Kiểm tra cán bộ đã coi phòng này chưa */
     public boolean hasBeenInRoom(String phong, String maCB) throws SQLException {
-        String sql = "SELECT 1 FROM room_history WHERE phong=? AND ma_cb=? LIMIT 1";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT 1 FROM room_history WHERE phong=? AND ma_cb=? LIMIT 1")) {
             ps.setString(1, phong); ps.setString(2, maCB);
-            ResultSet rs = ps.executeQuery();
-            return rs.next();
+            return ps.executeQuery().next();
         }
     }
 
-    /** Kiểm tra cặp này đã từng cùng phòng chưa */
     public boolean pairUsed(String key) throws SQLException {
-        String sql = "SELECT 1 FROM pair_history WHERE pair_key=? LIMIT 1";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT 1 FROM pair_history WHERE pair_key=? LIMIT 1")) {
             ps.setString(1, key);
-            ResultSet rs = ps.executeQuery();
-            return rs.next();
+            return ps.executeQuery().next();
         }
     }
 
-    // ===== Thống kê =====
-
-    public int countCanBo()   throws SQLException { return count("can_bo"); }
-    public int countPhongThi()throws SQLException { return count("phong_thi"); }
-    public int countPhanCong()throws SQLException { return count("phan_cong"); }
-    public int countGiamSat() throws SQLException { return count("giam_sat"); }
+    public int countCanBo()    throws SQLException { return count("can_bo"); }
+    public int countPhongThi() throws SQLException { return count("phong_thi"); }
+    public int countPhanCong() throws SQLException { return count("phan_cong"); }
+    public int countGiamSat()  throws SQLException { return count("giam_sat"); }
 
     private int count(String table) throws SQLException {
         try (Statement st = conn.createStatement();

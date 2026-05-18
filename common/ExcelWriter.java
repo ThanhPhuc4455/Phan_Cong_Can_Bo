@@ -1,7 +1,7 @@
 package common;
 
-import model.GiamSatEntry;
-import model.PhanCongEntry;
+import common.model.GiamSatEntry;
+import common.model.PhanCongEntry;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.*;
 
@@ -146,10 +146,9 @@ public class ExcelWriter {
         XSSFFont f = wb.createFont();
         f.setBold(true);
         f.setFontHeightInPoints((short) 14);
-        f.setColor(new XSSFColor(hexToRGB("1F3864"), new org.apache.poi.xssf.usermodel.extensions.XSSFCellBorder.BorderSide[0].getClass().cast(null) == null
-            ? new org.apache.poi.xssf.model.IndexedColorMap() {} : null));
+        f.setFontName("Arial");
         f.setColor(IndexedColors.DARK_BLUE.getIndex());
-        s.setFont(f);
+        s.setFont(f);       
         s.setAlignment(HorizontalAlignment.CENTER);
         s.setVerticalAlignment(VerticalAlignment.CENTER);
         s.setWrapText(true);

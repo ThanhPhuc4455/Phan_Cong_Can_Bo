@@ -1,9 +1,5 @@
-
-
-import model.CanBo;
-import model.GiamSatEntry;
-import model.PhanCongEntry;
-import model.PhongThi;
+package common;
+import common.model.*;
 
 import java.sql.SQLException;
 import java.util.*;
