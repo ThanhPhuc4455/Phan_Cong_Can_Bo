@@ -264,30 +264,24 @@ public class AssignmentAlgorithm {
         return result;
     }
 
-    /**
-     * Nạp toàn bộ lịch sử từ DB vào bộ nhớ cache.
-     * Tránh truy vấn DB lặp lại trong vòng lặp → tăng hiệu năng.
-     */
     private void loadHistoryCache(List<PhongThi> phongList,
                                    List<CanBo>   canBoList,
                                    Map<String, Set<String>> roomCache,
                                    Set<String>              pairCache) throws SQLException {
-        // Nạp room history
+        // Nạp tất cả lịch sử phòng thi từ DB
+        Map<String, Set<String>> allRoomHist = db.getAllRoomHistory();
         for (PhongThi p : phongList) {
-            roomCache.put(p.getTenPhong(), new HashSet<>());
-        }
-        for (CanBo cb : canBoList) {
-            for (PhongThi p : phongList) {
-                try {
-                    if (db.hasBeenInRoom(p.getTenPhong(), cb.getMaCB())) {
-                        roomCache.computeIfAbsent(p.getTenPhong(), k -> new HashSet<>())
-                                 .add(cb.getMaCB());
-                    }
-                } catch (SQLException e) { /* bỏ qua lỗi đọc đơn lẻ */ }
+            Set<String> cbSet = allRoomHist.get(p.getTenPhong());
+            if (cbSet != null) {
+                roomCache.put(p.getTenPhong(), new HashSet<>(cbSet));
+            } else {
+                roomCache.put(p.getTenPhong(), new HashSet<>());
             }
         }
-        // Nạp pair history – đọc trực tiếp bảng (đơn giản hơn)
-        // (Đây là cache đơn giản; với DB lớn nên dùng batch query)
+        
+        // Nạp tất cả lịch sử cặp giám thị từ DB
+        Set<String> allPairHist = db.getAllPairHistory();
+        pairCache.addAll(allPairHist);
     }
 
     /** Tạo khóa duy nhất cho cặp (sắp xếp alpha để đảm bảo duy nhất) */

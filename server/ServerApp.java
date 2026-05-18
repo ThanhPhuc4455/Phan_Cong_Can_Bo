@@ -12,6 +12,7 @@ import java.net.Socket;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
 /**
  * Giao diện chính của SERVER.
@@ -267,7 +268,7 @@ public class ServerApp extends JFrame {
                     SwingUtilities.invokeLater(this::refreshStats);
                 }
             } catch (IOException e) {
-                if (running) log("❌ Lỗi server: " + e.getMessage());
+                if (running) log(" Lỗi server: " + e.getMessage());
             }
         });
         acceptThread.setDaemon(true);
@@ -283,7 +284,7 @@ public class ServerApp extends JFrame {
         portField.setEnabled(true);
         statusLabel.setText("⏸  Đã dừng");
         statusLabel.setForeground(new Color(0xFFCC00));
-        log("⏹  Server đã dừng.");
+        log(" Server đã dừng.");
     }
 
     // ─────────────────────────────────────────────
@@ -335,11 +336,9 @@ public class ServerApp extends JFrame {
         JButton btn = new JButton(text);
         btn.setBackground(bg);
         btn.setForeground(Color.WHITE);
-        btn.setFont(new Font("Arial", Font.BOLD, 12));
-        btn.setFocusPainted(false);
-        btn.setBorderPainted(false);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setBorder(new EmptyBorder(6, 14, 6, 14));
+        // Loại bỏ setFocusPainted và setBorderPainted để FlatLaf tự render hiệu ứng (hover, border)
         return btn;
     }
 
@@ -362,8 +361,14 @@ public class ServerApp extends JFrame {
     //  Main
     // ─────────────────────────────────────────────
     public static void main(String[] args) {
-        // Thiết lập Look and Feel hệ thống
-        try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); }
+        // Thiết lập Look and Feel hiện đại macOS
+        try { 
+            UIManager.put("Button.arc", 12);
+            UIManager.put("Component.arc", 12);
+            UIManager.put("TextComponent.arc", 12);
+            UIManager.put("defaultFont", new Font("Segoe UI", Font.PLAIN, 13));
+            FlatMacLightLaf.setup(); 
+        }
         catch (Exception ignored) {}
 
         SwingUtilities.invokeLater(ServerApp::new);

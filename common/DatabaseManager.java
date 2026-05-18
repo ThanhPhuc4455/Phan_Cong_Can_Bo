@@ -7,6 +7,10 @@ import common.model.PhongThi;
 
 import java.sql.*;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * Quản lý cơ sở dữ liệu MySQL.
@@ -200,6 +204,30 @@ public class DatabaseManager {
             ps.setString(1, key);
             return ps.executeQuery().next();
         }
+    }
+
+    public Map<String, Set<String>> getAllRoomHistory() throws SQLException {
+        Map<String, Set<String>> map = new HashMap<>();
+        try (Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery("SELECT phong, ma_cb FROM room_history")) {
+            while (rs.next()) {
+                String phong = rs.getString("phong");
+                String maCB = rs.getString("ma_cb");
+                map.computeIfAbsent(phong, k -> new HashSet<>()).add(maCB);
+            }
+        }
+        return map;
+    }
+
+    public Set<String> getAllPairHistory() throws SQLException {
+        Set<String> set = new HashSet<>();
+        try (Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery("SELECT pair_key FROM pair_history")) {
+            while (rs.next()) {
+                set.add(rs.getString("pair_key"));
+            }
+        }
+        return set;
     }
 
     public int countCanBo()    throws SQLException { return count("can_bo"); }

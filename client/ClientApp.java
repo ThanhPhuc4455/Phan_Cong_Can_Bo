@@ -12,6 +12,7 @@ import java.io.*;
 import java.net.Socket;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
 /**
  * Giao diện CLIENT – Hệ thống Phân công Cán bộ Coi thi.
@@ -620,12 +621,11 @@ public class ClientApp extends JFrame {
         JButton btn = new JButton(text);
         btn.setBackground(bg);
         btn.setForeground(Color.WHITE);
-        btn.setFont(new Font("Arial", Font.BOLD, 13));
-        btn.setFocusPainted(false);
-        btn.setBorderPainted(false);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         btn.setAlignmentX(LEFT_ALIGNMENT);
+        // Bỏ setBorderPainted(false) để lấy viền mặc định của FlatLaf
         return btn;
     }
 
@@ -633,11 +633,8 @@ public class ClientApp extends JFrame {
         JButton btn = new JButton(text);
         btn.setBackground(bg);
         btn.setForeground(Color.WHITE);
-        btn.setFont(new Font("Arial", Font.BOLD, 12));
-        btn.setFocusPainted(false);
-        btn.setBorderPainted(false);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setBorder(new EmptyBorder(5, 10, 5, 10));
         return btn;
     }
 
@@ -645,7 +642,15 @@ public class ClientApp extends JFrame {
     //  Main
     // ─────────────────────────────────────────────────────────────────
     public static void main(String[] args) {
-        try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); }
+        // Thiết lập Look and Feel hiện đại macOS
+        try { 
+            UIManager.put("Button.arc", 12);
+            UIManager.put("Component.arc", 12);
+            UIManager.put("TextComponent.arc", 12);
+            UIManager.put("ProgressBar.arc", 12);
+            UIManager.put("defaultFont", new Font("Segoe UI", Font.PLAIN, 13));
+            FlatMacLightLaf.setup(); 
+        }
         catch (Exception ignored) {}
         SwingUtilities.invokeLater(ClientApp::new);
     }

@@ -74,9 +74,6 @@ public class ClientHandler extends Thread {
             log(String.format("   → Cán bộ: %d người | Phòng thi: %d phòng",
                               canBoList.size(), phongList.size()));
 
-            if (phongList.size() < 1000) {
-                log("   ⚠️  Cảnh báo: Ít hơn 1000 phòng thi (đề yêu cầu n ≥ 1000).");
-            }
             if (canBoList.size() < phongList.size() * 2) {
                 log("   ⚠️  Cảnh báo: Số cán bộ không đủ cho 2 giám thị/phòng.");
             }
@@ -88,23 +85,33 @@ public class ClientHandler extends Thread {
 
             // ── Thuật toán phân công ──────────────────────────────────────
             AssignmentAlgorithm algo   = new AssignmentAlgorithm(db);
-            AssignmentAlgorithm.AssignmentResult result =
-                    algo.assign(canBoList, phongList, caThi);
+            
+            java.util.Map<Integer, List<PhanCongEntry>> phanCongMap = new java.util.LinkedHashMap<>();
+            java.util.Map<Integer, List<GiamSatEntry>> giamSatMap = new java.util.LinkedHashMap<>();
 
-            List<PhanCongEntry> phanCong = result.phanCong;
-            List<GiamSatEntry>  giamSat  = result.giamSat;
+            for (int i = 1; i <= caThi; i++) {
+                log("⚙️  Đang xử lý phân công ca " + i + "...");
+                AssignmentAlgorithm.AssignmentResult result =
+                        algo.assign(canBoList, phongList, i);
 
-            log(String.format("   → Phân công: %d giám thị | Giám sát: %d người",
-                              phanCong.size() / 2, giamSat.size()));
+                List<PhanCongEntry> phanCong = result.phanCong;
+                List<GiamSatEntry>  giamSat  = result.giamSat;
 
-            // ── Lưu kết quả vào DB ────────────────────────────────────────
-            db.savePhanCong(caThi, phanCong);
-            db.saveGiamSat(caThi, giamSat);
+                log(String.format("   → Ca %d - Phân công: %d giám thị | Giám sát: %d người",
+                                  i, phanCong.size() / 2, giamSat.size()));
 
-            // ── Xuất Excel ────────────────────────────────────────────────
-            byte[] phanCongExcel = ExcelWriter.writePhanCong(phanCong, caThi);
-            byte[] giamSatExcel  = ExcelWriter.writeGiamSat(giamSat, caThi);
-            log("   → Đã xuất file Excel kết quả.");
+                // ── Lưu kết quả vào DB ────────────────────────────────────────
+                db.savePhanCong(i, phanCong);
+                db.saveGiamSat(i, giamSat);
+                
+                phanCongMap.put(i, phanCong);
+                giamSatMap.put(i, giamSat);
+            }
+
+            // ── Xuất Excel (Mỗi ca 1 sheet) ─────────────────────────────
+            byte[] phanCongExcel = ExcelWriter.writePhanCong(phanCongMap);
+            byte[] giamSatExcel  = ExcelWriter.writeGiamSat(giamSatMap);
+            log("   → Đã xuất file Excel kết quả chứa " + caThi + " sheet.");
 
             // ── Bước 5+6: Gửi kết quả về Client ──────────────────────────
             out.writeInt(Protocol.CMD_SEND_FILE);

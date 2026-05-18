@@ -28,56 +28,52 @@ public class ExcelWriter {
     private static final String ROW_COLOR_EVEN = "EAF4EA"; // xanh lá nhạt - giám sát
 
     /**
-     * Xuất DANHSACHPHANCONG.xlsx ra mảng byte
+     * Xuất DANHSACHPHANCONG.xlsx ra mảng byte (hỗ trợ nhiều ca, mỗi ca 1 sheet)
      */
-    public static byte[] writePhanCong(List<PhanCongEntry> entries, int caThi) throws IOException {
+    public static byte[] writePhanCong(java.util.Map<Integer, List<PhanCongEntry>> caMap) throws IOException {
         try (XSSFWorkbook wb = new XSSFWorkbook()) {
-            XSSFSheet sheet = wb.createSheet("Phân Công Ca " + caThi);
+            for (java.util.Map.Entry<Integer, List<PhanCongEntry>> entry : caMap.entrySet()) {
+                int caThi = entry.getKey();
+                List<PhanCongEntry> entries = entry.getValue();
 
-            // Độ rộng cột
-            sheet.setColumnWidth(0, 1500);   // STT
-            sheet.setColumnWidth(1, 4000);   // Mã GV
-            sheet.setColumnWidth(2, 8000);   // Họ tên
-            sheet.setColumnWidth(3, 4000);   // Vai trò
-            sheet.setColumnWidth(4, 4000);   // Phòng thi
+                XSSFSheet sheet = wb.createSheet("Phân Công Ca " + caThi);
 
-            // --- Tiêu đề lớn ---
-            Row titleRow = sheet.createRow(0);
-            Cell titleCell = titleRow.createCell(0);
-            titleCell.setCellValue("DANH SÁCH PHÂN CÔNG GIÁM THỊ COI THI - CA " + caThi);
-            titleCell.setCellStyle(buildTitleStyle(wb));
-            sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(0, 0, 0, 4));
-            titleRow.setHeightInPoints(30);
+                sheet.setColumnWidth(0, 1500);
+                sheet.setColumnWidth(1, 4000);
+                sheet.setColumnWidth(2, 8000);
+                sheet.setColumnWidth(3, 4000);
+                sheet.setColumnWidth(4, 4000);
 
-            // --- Header ---
-            Row header = sheet.createRow(1);
-            String[] headers = { "STT", "Mã GV", "Họ và Tên", "Vai Trò", "Phòng Thi" };
-            CellStyle hStyle = buildHeaderStyle(wb, HEADER_COLOR_PHANCONG);
-            for (int c = 0; c < headers.length; c++) {
-                Cell cell = header.createCell(c);
-                cell.setCellValue(headers[c]);
-                cell.setCellStyle(hStyle);
+                Row titleRow = sheet.createRow(0);
+                Cell titleCell = titleRow.createCell(0);
+                titleCell.setCellValue("DANH SÁCH PHÂN CÔNG GIÁM THỊ COI THI - CA " + caThi);
+                titleCell.setCellStyle(buildTitleStyle(wb));
+                sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(0, 0, 0, 4));
+                titleRow.setHeightInPoints(30);
+
+                Row header = sheet.createRow(1);
+                String[] headers = { "STT", "Mã GV", "Họ và Tên", "Vai Trò", "Phòng Thi" };
+                CellStyle hStyle = buildHeaderStyle(wb, HEADER_COLOR_PHANCONG);
+                for (int c = 0; c < headers.length; c++) {
+                    Cell cell = header.createCell(c);
+                    cell.setCellValue(headers[c]);
+                    cell.setCellStyle(hStyle);
+                }
+                header.setHeightInPoints(20);
+
+                CellStyle styleGT1  = buildDataStyle(wb, ROW_COLOR_GT1);
+                CellStyle styleGT2  = buildDataStyle(wb, ROW_COLOR_GT2);
+
+                int rowNum = 2;
+                for (PhanCongEntry e : entries) {
+                    Row row = sheet.createRow(rowNum++);
+                    CellStyle style = e.getVaiTro().contains("1") ? styleGT1 : styleGT2;
+                    createDataRow(row, style,
+                        String.valueOf(e.getStt()), e.getMaCB(), e.getHoTen(), e.getVaiTro(), e.getPhongThi());
+                }
+
+                sheet.setAutoFilter(new org.apache.poi.ss.util.CellRangeAddress(1, 1, 0, 4));
             }
-            header.setHeightInPoints(20);
-
-            // --- Dữ liệu ---
-            CellStyle styleGT1  = buildDataStyle(wb, ROW_COLOR_GT1);
-            CellStyle styleGT2  = buildDataStyle(wb, ROW_COLOR_GT2);
-
-            int rowNum = 2;
-            for (PhanCongEntry e : entries) {
-                Row row = sheet.createRow(rowNum++);
-                CellStyle style = e.getVaiTro().contains("1") ? styleGT1 : styleGT2;
-                createDataRow(row, style,
-                    String.valueOf(e.getStt()),
-                    e.getMaCB(),
-                    e.getHoTen(),
-                    e.getVaiTro(),
-                    e.getPhongThi());
-            }
-
-            // Tự động lọc
-            sheet.setAutoFilter(new org.apache.poi.ss.util.CellRangeAddress(1, 1, 0, 4));
 
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             wb.write(bos);
@@ -86,52 +82,51 @@ public class ExcelWriter {
     }
 
     /**
-     * Xuất DANHSACHGIAMSAT.xlsx ra mảng byte
+     * Xuất DANHSACHGIAMSAT.xlsx ra mảng byte (hỗ trợ nhiều ca, mỗi ca 1 sheet)
      */
-    public static byte[] writeGiamSat(List<GiamSatEntry> entries, int caThi) throws IOException {
+    public static byte[] writeGiamSat(java.util.Map<Integer, List<GiamSatEntry>> caMap) throws IOException {
         try (XSSFWorkbook wb = new XSSFWorkbook()) {
-            XSSFSheet sheet = wb.createSheet("Giám Sát Ca " + caThi);
+            for (java.util.Map.Entry<Integer, List<GiamSatEntry>> entry : caMap.entrySet()) {
+                int caThi = entry.getKey();
+                List<GiamSatEntry> entries = entry.getValue();
 
-            sheet.setColumnWidth(0, 1500);
-            sheet.setColumnWidth(1, 4000);
-            sheet.setColumnWidth(2, 8000);
-            sheet.setColumnWidth(3, 7000);
+                XSSFSheet sheet = wb.createSheet("Giám Sát Ca " + caThi);
 
-            // Tiêu đề
-            Row titleRow = sheet.createRow(0);
-            Cell titleCell = titleRow.createCell(0);
-            titleCell.setCellValue("DANH SÁCH CÁN BỘ GIÁM SÁT HÀNH LANG - CA " + caThi);
-            titleCell.setCellStyle(buildTitleStyle(wb));
-            sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(0, 0, 0, 3));
-            titleRow.setHeightInPoints(30);
+                sheet.setColumnWidth(0, 1500);
+                sheet.setColumnWidth(1, 4000);
+                sheet.setColumnWidth(2, 8000);
+                sheet.setColumnWidth(3, 7000);
 
-            // Header
-            Row header = sheet.createRow(1);
-            String[] headers = { "STT", "Mã GV", "Họ và Tên", "Khu Vực Giám Sát" };
-            CellStyle hStyle = buildHeaderStyle(wb, HEADER_COLOR_GIAMSAT);
-            for (int c = 0; c < headers.length; c++) {
-                Cell cell = header.createCell(c);
-                cell.setCellValue(headers[c]);
-                cell.setCellStyle(hStyle);
+                Row titleRow = sheet.createRow(0);
+                Cell titleCell = titleRow.createCell(0);
+                titleCell.setCellValue("DANH SÁCH CÁN BỘ GIÁM SÁT HÀNH LANG - CA " + caThi);
+                titleCell.setCellStyle(buildTitleStyle(wb));
+                sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(0, 0, 0, 3));
+                titleRow.setHeightInPoints(30);
+
+                Row header = sheet.createRow(1);
+                String[] headers = { "STT", "Mã GV", "Họ và Tên", "Khu Vực Giám Sát" };
+                CellStyle hStyle = buildHeaderStyle(wb, HEADER_COLOR_GIAMSAT);
+                for (int c = 0; c < headers.length; c++) {
+                    Cell cell = header.createCell(c);
+                    cell.setCellValue(headers[c]);
+                    cell.setCellStyle(hStyle);
+                }
+                header.setHeightInPoints(20);
+
+                CellStyle styleEven = buildDataStyle(wb, ROW_COLOR_EVEN);
+                CellStyle styleOdd  = buildDataStyle(wb, ROW_COLOR_GT2);
+
+                int rowNum = 2;
+                for (GiamSatEntry e : entries) {
+                    Row row = sheet.createRow(rowNum++);
+                    CellStyle style = (e.getStt() % 2 == 0) ? styleEven : styleOdd;
+                    createDataRow(row, style,
+                        String.valueOf(e.getStt()), e.getMaCB(), e.getHoTen(), e.getKhuVuc());
+                }
+
+                sheet.setAutoFilter(new org.apache.poi.ss.util.CellRangeAddress(1, 1, 0, 3));
             }
-            header.setHeightInPoints(20);
-
-            // Dữ liệu
-            CellStyle styleEven = buildDataStyle(wb, ROW_COLOR_EVEN);
-            CellStyle styleOdd  = buildDataStyle(wb, ROW_COLOR_GT2);
-
-            int rowNum = 2;
-            for (GiamSatEntry e : entries) {
-                Row row = sheet.createRow(rowNum++);
-                CellStyle style = (e.getStt() % 2 == 0) ? styleEven : styleOdd;
-                createDataRow(row, style,
-                    String.valueOf(e.getStt()),
-                    e.getMaCB(),
-                    e.getHoTen(),
-                    e.getKhuVuc());
-            }
-
-            sheet.setAutoFilter(new org.apache.poi.ss.util.CellRangeAddress(1, 1, 0, 3));
 
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             wb.write(bos);
