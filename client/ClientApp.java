@@ -33,6 +33,9 @@ public class ClientApp extends JFrame {
     private static final Color COLOR_DANGER   = new Color(0xC62828);
     private static final Color COLOR_ACCENT   = new Color(0x1565C0);
     private static final Color COLOR_BG       = new Color(0xF5F5F5);
+    private static final Color COLOR_CARD_BG  = new Color(0xFFFFFF);
+    private static final Color COLOR_MUTED    = new Color(0x64748B);
+    private static final Color COLOR_BORDER   = new Color(0xD7E0EA);
     private static final Color COLOR_LOG_BG   = new Color(0x1A1A2E);
     private static final Color COLOR_LOG_TEXT = new Color(0x00FF88);
     private static final Color COLOR_WARN     = new Color(0xFF6F00);
@@ -45,6 +48,8 @@ public class ClientApp extends JFrame {
     private JTextField  txtSaveDir;
     private JTextField  txtHost;
     private JTextField  txtPort;
+    private JSpinner    spnSoPhong;
+    private JSpinner    spnSoCanBo;
     private JSpinner    spnCaThi;
     private JTextArea   logArea;
     private JButton     btnSend;
@@ -70,7 +75,8 @@ public class ClientApp extends JFrame {
     private void initUI() {
         setTitle("📋 CLIENT – HỆ THỐNG PHÂN CÔNG CÁN BỘ COI THI");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(920, 720);
+        setSize(1040, 760);
+        setMinimumSize(new Dimension(980, 700));
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(8, 8));
         getContentPane().setBackground(COLOR_BG);
@@ -82,17 +88,20 @@ public class ClientApp extends JFrame {
 
     // ─── Top: tiêu đề ──────────────────────────────────────────────
     private JPanel buildTopPanel() {
-        JPanel top = new JPanel(new BorderLayout());
+        JPanel top = new JPanel(new BorderLayout(16, 0));
         top.setBackground(COLOR_PRIMARY);
-        top.setBorder(new EmptyBorder(14, 18, 14, 18));
+        top.setBorder(new EmptyBorder(18, 22, 18, 22));
 
         JLabel title = new JLabel("CLIENT – PHÂN CÔNG CÁN BỘ COI THI", SwingConstants.LEFT);
-        title.setFont(new Font("Arial", Font.BOLD, 18));
+        title.setFont(new Font("Segoe UI Semibold", Font.BOLD, 22));
         title.setForeground(Color.WHITE);
 
         statusLabel = new JLabel("⏸  Chưa kết nối", SwingConstants.RIGHT);
-        statusLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        statusLabel.setFont(new Font("Segoe UI Semibold", Font.BOLD, 12));
         statusLabel.setForeground(new Color(0xFFCC00));
+        statusLabel.setBorder(new CompoundBorder(
+            BorderFactory.createLineBorder(new Color(0x88B7FF), 1, true),
+            new EmptyBorder(8, 14, 8, 14)));
 
         top.add(title,       BorderLayout.WEST);
         top.add(statusLabel, BorderLayout.EAST);
@@ -104,9 +113,11 @@ public class ClientApp extends JFrame {
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
                                           buildLeftPanel(),
                                           buildRightPanel());
-        split.setDividerLocation(420);
+        split.setDividerLocation(470);
         split.setResizeWeight(0.45);
-        split.setBorder(new EmptyBorder(6, 8, 6, 8));
+        split.setContinuousLayout(true);
+        split.setDividerSize(10);
+        split.setBorder(new EmptyBorder(12, 12, 12, 12));
         return split;
     }
 
@@ -115,7 +126,7 @@ public class ClientApp extends JFrame {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(COLOR_BG);
-        panel.setBorder(new EmptyBorder(4, 4, 4, 8));
+        panel.setBorder(new EmptyBorder(4, 4, 4, 12));
 
         panel.add(buildFileSection());
         panel.add(Box.createVerticalStrut(10));
@@ -132,6 +143,8 @@ public class ClientApp extends JFrame {
     // ─── Phần chọn file ────────────────────────────────────────────
     private JPanel buildFileSection() {
         JPanel p = titledPanel("📂  Chọn File Đầu Vào");
+        p.add(makeHintLabel("Chon file nguon va thu muc de luu 2 file Excel ket qua."));
+        p.add(Box.createVerticalStrut(10));
 
         // File cán bộ
         p.add(new JLabel("File CANBOCOITHI.xlsx:"));
@@ -182,6 +195,8 @@ public class ClientApp extends JFrame {
     // ─── Phần kết nối ──────────────────────────────────────────────
     private JPanel buildConnectionSection() {
         JPanel p = titledPanel("🌐  Kết Nối Server");
+        p.add(makeHintLabel("n là số phòng, m là số cán bộ sử dụng thực tế từ file Excel."));
+        p.add(Box.createVerticalStrut(10));
 
         JPanel row1 = new JPanel(new GridLayout(1, 2, 10, 0));
         row1.setOpaque(false);
@@ -203,13 +218,33 @@ public class ClientApp extends JFrame {
         p.add(row1);
         p.add(Box.createVerticalStrut(10));
 
-        JPanel row2 = new JPanel(new BorderLayout(0, 3));
+        JPanel row2 = new JPanel(new GridLayout(1, 3, 10, 0));
         row2.setOpaque(false);
-        row2.add(new JLabel("Số ca thi:"), BorderLayout.NORTH);
-        SpinnerNumberModel model = new SpinnerNumberModel(1, 1, 99, 1);
-        spnCaThi = new JSpinner(model);
+
+        JPanel colPhong = new JPanel(new BorderLayout(0, 3));
+        colPhong.setOpaque(false);
+        colPhong.add(new JLabel("Số phòng (n):"), BorderLayout.NORTH);
+        spnSoPhong = new JSpinner(new SpinnerNumberModel(1, 1, 9999, 1));
+        spnSoPhong.setFont(new Font("Arial", Font.PLAIN, 13));
+        colPhong.add(spnSoPhong, BorderLayout.CENTER);
+
+        JPanel colCanBo = new JPanel(new BorderLayout(0, 3));
+        colCanBo.setOpaque(false);
+        colCanBo.add(new JLabel("Số cán bộ (m):"), BorderLayout.NORTH);
+        spnSoCanBo = new JSpinner(new SpinnerNumberModel(2, 2, 9999, 1));
+        spnSoCanBo.setFont(new Font("Arial", Font.PLAIN, 13));
+        colCanBo.add(spnSoCanBo, BorderLayout.CENTER);
+
+        JPanel colCaThi = new JPanel(new BorderLayout(0, 3));
+        colCaThi.setOpaque(false);
+        colCaThi.add(new JLabel("Số ca thi:"), BorderLayout.NORTH);
+        spnCaThi = new JSpinner(new SpinnerNumberModel(1, 1, 99, 1));
         spnCaThi.setFont(new Font("Arial", Font.PLAIN, 13));
-        row2.add(spnCaThi, BorderLayout.WEST);
+        colCaThi.add(spnCaThi, BorderLayout.CENTER);
+
+        row2.add(colPhong);
+        row2.add(colCanBo);
+        row2.add(colCaThi);
         p.add(row2);
 
         return p;
@@ -217,29 +252,33 @@ public class ClientApp extends JFrame {
 
     // ─── Phần nút hành động ────────────────────────────────────────
     private JPanel buildActionSection() {
-        JPanel p = new JPanel(new BorderLayout(0, 6));
-        p.setOpaque(false);
+        JPanel p = titledPanel("⚡  Thực Thi");
+        p.add(makeHintLabel("He thong se gui file len server, cho xu ly, sau do tai 2 file ket qua ve may."));
+        p.add(Box.createVerticalStrut(10));
 
         btnSend = makeButton("📤  Gửi & Phân Công", COLOR_SUCCESS);
-        btnSend.setPreferredSize(new Dimension(0, 46));
-        btnSend.setFont(new Font("Arial", Font.BOLD, 15));
+        btnSend.setPreferredSize(new Dimension(0, 52));
+        btnSend.setFont(new Font("Segoe UI Semibold", Font.BOLD, 15));
         btnSend.addActionListener(e -> sendRequest());
 
         progressBar = new JProgressBar();
         progressBar.setIndeterminate(false);
         progressBar.setStringPainted(true);
         progressBar.setString("Sẵn sàng");
-        progressBar.setFont(new Font("Arial", Font.PLAIN, 11));
-        progressBar.setPreferredSize(new Dimension(0, 22));
+        progressBar.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        progressBar.setPreferredSize(new Dimension(0, 24));
 
-        p.add(btnSend,      BorderLayout.CENTER);
-        p.add(progressBar,  BorderLayout.SOUTH);
+        p.add(btnSend);
+        p.add(Box.createVerticalStrut(10));
+        p.add(progressBar);
         return p;
     }
 
     // ─── Phần xem kết quả ──────────────────────────────────────────
     private JPanel buildResultSection() {
         JPanel p = titledPanel("📊  Kết Quả Nhận Về");
+        p.add(makeHintLabel("Hai nut nay se sang len sau khi server tra file phan cong va file giam sat."));
+        p.add(Box.createVerticalStrut(10));
 
         JPanel row = new JPanel(new GridLayout(1, 2, 8, 0));
         row.setOpaque(false);
@@ -255,6 +294,8 @@ public class ClientApp extends JFrame {
         row.add(btnOpenPhanCong);
         row.add(btnOpenGiamSat);
         p.add(row);
+        p.add(Box.createVerticalStrut(8));
+        p.add(makeHintLabel("Ban co the mo file ngay de kiem tra tung sheet theo tung ca thi."));
 
         return p;
     }
@@ -262,35 +303,42 @@ public class ClientApp extends JFrame {
     // ─── Phải: nhật ký ─────────────────────────────────────────────
     private JPanel buildRightPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(COLOR_BG);
+        panel.setBackground(COLOR_CARD_BG);
         panel.setBorder(new TitledBorder(
-            BorderFactory.createLineBorder(COLOR_PRIMARY, 1),
+            BorderFactory.createLineBorder(COLOR_BORDER, 1),
             " 📋 Nhật Ký Hoạt Động ",
             TitledBorder.LEFT, TitledBorder.TOP,
-            new Font("Arial", Font.BOLD, 12), COLOR_PRIMARY));
+            new Font("Segoe UI Semibold", Font.BOLD, 12), COLOR_PRIMARY));
+
+        JLabel intro = new JLabel("Nhat ky thoi gian thuc cho qua trinh ket noi, gui file va nhan ket qua.");
+        intro.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        intro.setForeground(COLOR_MUTED);
+        intro.setBorder(new EmptyBorder(10, 12, 8, 12));
+        panel.add(intro, BorderLayout.NORTH);
 
         logArea = new JTextArea();
         logArea.setEditable(false);
         logArea.setBackground(COLOR_LOG_BG);
         logArea.setForeground(COLOR_LOG_TEXT);
         logArea.setFont(new Font("Consolas", Font.PLAIN, 12));
-        logArea.setMargin(new Insets(8, 8, 8, 8));
+        logArea.setMargin(new Insets(12, 12, 12, 12));
 
         JScrollPane scroll = new JScrollPane(logArea);
         scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        scroll.setBorder(new EmptyBorder(0, 12, 8, 12));
         panel.add(scroll, BorderLayout.CENTER);
 
         // Nút xóa log
         JButton btnClearLog = makeSmallButton("🗑 Xóa Log", COLOR_DANGER);
         btnClearLog.addActionListener(e -> logArea.setText(""));
         JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 4));
-        btnRow.setBackground(COLOR_BG);
+        btnRow.setBackground(COLOR_CARD_BG);
         btnRow.add(btnClearLog);
         panel.add(btnRow, BorderLayout.SOUTH);
 
         log("=== Client Phân Công Cán Bộ Coi Thi ===");
         log("1. Chọn file CANBOCOITHI.xlsx và PHONGTHI.xlsx");
-        log("2. Nhập địa chỉ server và số ca thi");
+        log("2. Nhập địa chỉ server, số phòng, số cán bộ và số ca thi");
         log("3. Nhấn 'Gửi & Phân Công' để bắt đầu");
 
         return panel;
@@ -301,9 +349,9 @@ public class ClientApp extends JFrame {
         JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER));
         p.setBackground(COLOR_PRIMARY);
         JLabel lbl = new JLabel(
-            "TCP Client  |  Giao thức: CMD_CA_NUMBER → FILE → CMD_PROCESS → nhận kết quả  |  Apache POI");
-        lbl.setForeground(new Color(0xCCCCCC));
-        lbl.setFont(new Font("Arial", Font.PLAIN, 11));
+            "TCP Client  |  Giao thức: CONFIG(n,m,ca) → FILE → CMD_PROCESS → nhận kết quả  |  Apache POI");
+        lbl.setForeground(new Color(0xD5E3F3));
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         p.add(lbl);
         return p;
     }
@@ -383,7 +431,13 @@ public class ClientApp extends JFrame {
         try { port = Integer.parseInt(txtPort.getText().trim()); }
         catch (NumberFormatException e) { showError("Cổng không hợp lệ!"); return; }
 
+        int soPhong = (int) spnSoPhong.getValue();
+        int soCanBo = (int) spnSoCanBo.getValue();
         int caThi = (int) spnCaThi.getValue();
+        if (soCanBo < soPhong * 2) {
+            showError("Số cán bộ (m) phải lớn hơn hoặc bằng 2 x số phòng (n) để đủ 2 giám thị mỗi phòng.");
+            return;
+        }
         File saveDir = new File(txtSaveDir.getText().trim());
         if (!saveDir.exists() && !saveDir.mkdirs()) {
             showError("Không thể tạo thư mục lưu: " + saveDir.getAbsolutePath());
@@ -399,9 +453,11 @@ public class ClientApp extends JFrame {
         // ── Chạy trên background thread để không đơ GUI ───────────────
         final String finalHost  = host;
         final int    finalPort  = port;
+        final int    finalSoPhong = soPhong;
+        final int    finalSoCanBo = soCanBo;
         new Thread(() -> {
             try {
-                doTransfer(finalHost, finalPort, caThi, saveDir);
+                doTransfer(finalHost, finalPort, finalSoPhong, finalSoCanBo, caThi, saveDir);
             } finally {
                 SwingUtilities.invokeLater(() -> {
                     setUIEnabled(true);
@@ -413,10 +469,10 @@ public class ClientApp extends JFrame {
 
     /**
      * Thực hiện toàn bộ giao tiếp Client ↔ Server:
-     *  CMD_CA_NUMBER → FILE_CANBO → FILE_PHONG → CMD_PROCESS
+     *  CMD_ASSIGNMENT_CONFIG → FILE_CANBO → FILE_PHONG → CMD_PROCESS
      *  ← CMD_SEND_FILE (phanCong) ← CMD_SEND_FILE (giamSat) ← CMD_DONE
      */
-    private void doTransfer(String host, int port, int caThi, File saveDir) {
+    private void doTransfer(String host, int port, int soPhong, int soCanBo, int caThi, File saveDir) {
         log("🔌 Đang kết nối tới " + host + ":" + port + " ...");
 
         try (Socket socket = new Socket(host, port);
@@ -426,9 +482,11 @@ public class ClientApp extends JFrame {
             setStatus("🟢  Đã kết nối", COLOR_SUCCESS);
             log("✅ Kết nối thành công!");
 
-            // ── Bước 1: Gửi số ca thi ─────────────────────────────────
-            log("📤 Gửi số ca thi: " + caThi);
-            out.writeInt(Protocol.CMD_CA_NUMBER);
+            // ── Bước 1: Gửi cấu hình phân công ────────────────────────
+            log("📤 Gửi cấu hình: n=" + soPhong + ", m=" + soCanBo + ", số ca=" + caThi);
+            out.writeInt(Protocol.CMD_ASSIGNMENT_CONFIG);
+            out.writeInt(soPhong);
+            out.writeInt(soCanBo);
             out.writeInt(caThi);
             out.flush();
 
@@ -505,7 +563,9 @@ public class ClientApp extends JFrame {
                 // Thông báo thành công
                 SwingUtilities.invokeLater(() -> {
                     StringBuilder sb = new StringBuilder();
-                    sb.append("Phân công ca ").append(caThi).append(" hoàn tất!\n\n");
+                    sb.append("Phân công ").append(soPhong).append(" phòng, ")
+                      .append(soCanBo).append(" cán bộ, ")
+                      .append(caThi).append(" ca hoàn tất!\n\n");
                     if (savedPhanCongFile != null)
                         sb.append("📋 ").append(savedPhanCongFile.getName()).append("\n");
                     if (savedGiamSatFile != null)
@@ -559,6 +619,8 @@ public class ClientApp extends JFrame {
     private void setUIEnabled(boolean enabled) {
         SwingUtilities.invokeLater(() -> {
             btnSend.setEnabled(enabled);
+            spnSoPhong.setEnabled(enabled);
+            spnSoCanBo.setEnabled(enabled);
             spnCaThi.setEnabled(enabled);
             txtHost.setEnabled(enabled);
             txtPort.setEnabled(enabled);
@@ -597,23 +659,26 @@ public class ClientApp extends JFrame {
     private JPanel titledPanel(String title) {
         JPanel p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
-        p.setBackground(COLOR_BG);
+        p.setBackground(COLOR_CARD_BG);
         p.setAlignmentX(LEFT_ALIGNMENT);
         p.setBorder(new CompoundBorder(
             new TitledBorder(
-                BorderFactory.createLineBorder(COLOR_ACCENT, 1),
+                BorderFactory.createLineBorder(COLOR_BORDER, 1, true),
                 " " + title + " ",
                 TitledBorder.LEFT, TitledBorder.TOP,
-                new Font("Arial", Font.BOLD, 12), COLOR_ACCENT),
-            new EmptyBorder(6, 8, 8, 8)));
+                new Font("Segoe UI Semibold", Font.BOLD, 12), COLOR_PRIMARY),
+            new EmptyBorder(10, 12, 12, 12)));
         p.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
         return p;
     }
 
     private JTextField makeTextField(String placeholder) {
         JTextField tf = new JTextField(placeholder);
-        tf.setFont(new Font("Arial", Font.PLAIN, 12));
-        tf.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+        tf.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        tf.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+        tf.setBorder(new CompoundBorder(
+            BorderFactory.createLineBorder(COLOR_BORDER, 1, true),
+            new EmptyBorder(6, 10, 6, 10)));
         return tf;
     }
 
@@ -621,7 +686,7 @@ public class ClientApp extends JFrame {
         JButton btn = new JButton(text);
         btn.setBackground(bg);
         btn.setForeground(Color.WHITE);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btn.setFont(new Font("Segoe UI Semibold", Font.BOLD, 13));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         btn.setAlignmentX(LEFT_ALIGNMENT);
@@ -633,9 +698,17 @@ public class ClientApp extends JFrame {
         JButton btn = new JButton(text);
         btn.setBackground(bg);
         btn.setForeground(Color.WHITE);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btn.setFont(new Font("Segoe UI Semibold", Font.BOLD, 12));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return btn;
+    }
+
+    private JLabel makeHintLabel(String text) {
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lbl.setForeground(COLOR_MUTED);
+        lbl.setAlignmentX(LEFT_ALIGNMENT);
+        return lbl;
     }
 
     // ─────────────────────────────────────────────────────────────────

@@ -45,6 +45,9 @@ public class ServerApp extends JFrame {
     private static final Color COLOR_DANGER    = new Color(0xC62828);
     private static final Color COLOR_ACCENT    = new Color(0x1565C0);
     private static final Color COLOR_BG        = new Color(0xF5F5F5);
+    private static final Color COLOR_CARD_BG   = new Color(0xFFFFFF);
+    private static final Color COLOR_MUTED     = new Color(0x64748B);
+    private static final Color COLOR_BORDER    = new Color(0xD7E0EA);
     private static final Color COLOR_LOG_BG    = new Color(0x1A1A2E);
     private static final Color COLOR_LOG_TEXT  = new Color(0x00FF88);
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
@@ -74,7 +77,8 @@ public class ServerApp extends JFrame {
     private void initUI() {
         setTitle("🖥  SERVER – HỆ THỐNG PHÂN CÔNG CÁN BỘ COI THI");
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        setSize(900, 680);
+        setSize(980, 720);
+        setMinimumSize(new Dimension(920, 680));
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
         getContentPane().setBackground(COLOR_BG);
@@ -97,12 +101,12 @@ public class ServerApp extends JFrame {
 
     // ─── Top Panel: tiêu đề + điều khiển ─────────
     private JPanel buildTopPanel() {
-        JPanel top = new JPanel(new BorderLayout());
+        JPanel top = new JPanel(new BorderLayout(16, 0));
         top.setBackground(COLOR_PRIMARY);
-        top.setBorder(new EmptyBorder(12, 16, 12, 16));
+        top.setBorder(new EmptyBorder(18, 22, 18, 22));
 
         JLabel title = new JLabel("SERVER PHÂN CÔNG CÁN BỘ COI THI", SwingConstants.LEFT);
-        title.setFont(new Font("Arial", Font.BOLD, 18));
+        title.setFont(new Font("Segoe UI Semibold", Font.BOLD, 22));
         title.setForeground(Color.WHITE);
         top.add(title, BorderLayout.WEST);
 
@@ -111,10 +115,13 @@ public class ServerApp extends JFrame {
 
         JLabel portLbl = new JLabel("Cổng:");
         portLbl.setForeground(Color.WHITE);
-        portLbl.setFont(new Font("Arial", Font.PLAIN, 13));
+        portLbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
 
         portField = new JTextField("9999", 6);
-        portField.setFont(new Font("Arial", Font.PLAIN, 13));
+        portField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        portField.setBorder(new CompoundBorder(
+            BorderFactory.createLineBorder(new Color(0x88B7FF), 1, true),
+            new EmptyBorder(6, 10, 6, 10)));
 
         btnStart = makeButton("▶  Khởi Động", COLOR_SUCCESS);
         btnStop  = makeButton("■  Dừng Server", COLOR_DANGER);
@@ -125,7 +132,10 @@ public class ServerApp extends JFrame {
 
         statusLabel = new JLabel("⏸  Chưa khởi động", SwingConstants.CENTER);
         statusLabel.setForeground(new Color(0xFFCC00));
-        statusLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        statusLabel.setFont(new Font("Segoe UI Semibold", Font.BOLD, 12));
+        statusLabel.setBorder(new CompoundBorder(
+            BorderFactory.createLineBorder(new Color(0x88B7FF), 1, true),
+            new EmptyBorder(8, 14, 8, 14)));
 
         ctrl.add(portLbl); ctrl.add(portField);
         ctrl.add(btnStart); ctrl.add(btnStop); ctrl.add(statusLabel);
@@ -138,25 +148,32 @@ public class ServerApp extends JFrame {
     private JPanel buildCenterPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(new TitledBorder(
-            BorderFactory.createLineBorder(COLOR_PRIMARY, 1),
+            BorderFactory.createLineBorder(COLOR_BORDER, 1),
             " 📋 Nhật Ký Hoạt Động ",
             TitledBorder.LEFT, TitledBorder.TOP,
-            new Font("Arial", Font.BOLD, 12), COLOR_PRIMARY));
-        panel.setBackground(COLOR_BG);
+            new Font("Segoe UI Semibold", Font.BOLD, 12), COLOR_PRIMARY));
+        panel.setBackground(COLOR_CARD_BG);
         panel.setBorder(new CompoundBorder(
             new EmptyBorder(0, 10, 0, 0),
             panel.getBorder()));
+
+        JLabel intro = new JLabel("Theo dõi trạng thái lắng nghe, kết nối client và tiến trình xử lý theo thời gian thực.");
+        intro.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        intro.setForeground(COLOR_MUTED);
+        intro.setBorder(new EmptyBorder(10, 12, 8, 12));
 
         logArea = new JTextArea();
         logArea.setEditable(false);
         logArea.setBackground(COLOR_LOG_BG);
         logArea.setForeground(COLOR_LOG_TEXT);
         logArea.setFont(new Font("Consolas", Font.PLAIN, 12));
-        logArea.setMargin(new Insets(8, 8, 8, 8));
+        logArea.setMargin(new Insets(12, 12, 12, 12));
 
         JScrollPane scroll = new JScrollPane(logArea);
         scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        panel.add(scroll);
+        scroll.setBorder(new EmptyBorder(0, 12, 12, 12));
+        panel.add(intro, BorderLayout.NORTH);
+        panel.add(scroll, BorderLayout.CENTER);
 
         log("=== Hệ Thống Phân Công Cán Bộ Coi Thi ===");
         log("Nhấn 'Khởi Động' để bắt đầu lắng nghe kết nối từ Client.");
@@ -168,15 +185,15 @@ public class ServerApp extends JFrame {
     private JPanel buildStatsPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(COLOR_BG);
+        panel.setBackground(COLOR_CARD_BG);
         panel.setBorder(new CompoundBorder(
             new EmptyBorder(0, 0, 0, 10),
             new TitledBorder(
-                BorderFactory.createLineBorder(COLOR_ACCENT, 1),
+                BorderFactory.createLineBorder(COLOR_BORDER, 1),
                 " 📊 Thống Kê CSDL ",
                 TitledBorder.LEFT, TitledBorder.TOP,
-                new Font("Arial", Font.BOLD, 12), COLOR_ACCENT)));
-        panel.setPreferredSize(new Dimension(220, 0));
+                new Font("Segoe UI Semibold", Font.BOLD, 12), COLOR_PRIMARY)));
+        panel.setPreferredSize(new Dimension(250, 0));
 
         lblCaThi    = makeStatLabel("Ca thi hiện tại: --");
         lblCanBo    = makeStatLabel("Cán bộ: --");
@@ -185,6 +202,8 @@ public class ServerApp extends JFrame {
         lblGiamSat  = makeStatLabel("Bản giám sát: --");
 
         panel.add(Box.createVerticalStrut(10));
+        panel.add(makeSectionHint("So lieu duoc lam moi sau moi lan client xu ly xong."));
+        panel.add(Box.createVerticalStrut(12));
         panel.add(lblCaThi);
         panel.add(Box.createVerticalStrut(8));
         panel.add(lblCanBo);
@@ -227,9 +246,9 @@ public class ServerApp extends JFrame {
     private JPanel buildBottomPanel() {
         JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER));
         p.setBackground(COLOR_PRIMARY);
-        JLabel lbl = new JLabel("TCP Port: 9999  |  SQLite DB: exam_proctor.db  |  Java Swing + Apache POI");
-        lbl.setForeground(new Color(0xCCCCCC));
-        lbl.setFont(new Font("Arial", Font.PLAIN, 11));
+        JLabel lbl = new JLabel("TCP Port: 9999  |  MySQL: exam_proctor  |  Java Swing + Apache POI");
+        lbl.setForeground(new Color(0xD5E3F3));
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         p.add(lbl);
         return p;
     }
@@ -336,7 +355,7 @@ public class ServerApp extends JFrame {
         JButton btn = new JButton(text);
         btn.setBackground(bg);
         btn.setForeground(Color.WHITE);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btn.setFont(new Font("Segoe UI Semibold", Font.BOLD, 13));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         // Loại bỏ setFocusPainted và setBorderPainted để FlatLaf tự render hiệu ứng (hover, border)
         return btn;
@@ -344,10 +363,21 @@ public class ServerApp extends JFrame {
 
     private JLabel makeStatLabel(String text) {
         JLabel lbl = new JLabel(text);
-        lbl.setFont(new Font("Arial", Font.PLAIN, 12));
-        lbl.setForeground(new Color(0x333333));
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lbl.setForeground(new Color(0x223047));
         lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
-        lbl.setBorder(new EmptyBorder(0, 10, 0, 0));
+        lbl.setBorder(new CompoundBorder(
+            BorderFactory.createLineBorder(new Color(0xE5ECF3), 1, true),
+            new EmptyBorder(10, 12, 10, 12)));
+        return lbl;
+    }
+
+    private JLabel makeSectionHint(String text) {
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lbl.setForeground(COLOR_MUTED);
+        lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lbl.setBorder(new EmptyBorder(0, 10, 0, 10));
         return lbl;
     }
 
