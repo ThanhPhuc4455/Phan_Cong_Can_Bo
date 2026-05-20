@@ -9,7 +9,7 @@ package common;
  *
  * Quy trình tổng thể:
  *   1. Client kết nối TCP tới Server
- *   2. Client gửi CMD_CA_NUMBER + số ca (int)
+ *   2. Client gửi CMD_ASSIGNMENT_CONFIG + số phòng (n) + số cán bộ (m) + số ca
  *   3. Client gửi CMD_SEND_FILE + tên file + nội dung (CANBOCOITHI.xlsx)
  *   4. Client gửi CMD_SEND_FILE + tên file + nội dung (PHONGTHI.xlsx)
  *   5. Client gửi CMD_PROCESS → Server xử lý phân công
@@ -30,7 +30,7 @@ public class Protocol {
     public static final String FILE_GIAMSAT  = "DANHSACHGIAMSAT.xlsx";
 
     // ===== Mã lệnh (4 bytes int) =====
-    public static final int CMD_CA_NUMBER = 1001; // Gửi số ca thi (theo sau là int)
+    public static final int CMD_ASSIGNMENT_CONFIG = 1001; // Gửi n, m, số ca (theo sau là 3 int)
     public static final int CMD_SEND_FILE = 1002; // Gửi file (theo sau: nameLen+name+dataLen+data)
     public static final int CMD_PROCESS   = 1003; // Yêu cầu server xử lý phân công
     public static final int CMD_DONE      = 1004; // Kết thúc, mọi thứ OK

@@ -42,11 +42,13 @@ public class ClientHandler extends Thread {
         try (DataInputStream  in  = new DataInputStream(socket.getInputStream());
              DataOutputStream out = new DataOutputStream(socket.getOutputStream())) {
 
-            // ── Bước 1: Nhận số ca thi ────────────────────────────────────
+            // ── Bước 1: Nhận cấu hình phân công ──────────────────────────
             int cmd = in.readInt();
-            if (cmd != Protocol.CMD_CA_NUMBER) { sendError(out, "Lệnh không hợp lệ."); return; }
+            if (cmd != Protocol.CMD_ASSIGNMENT_CONFIG) { sendError(out, "Lệnh không hợp lệ."); return; }
+            int soPhong = in.readInt();
+            int soCanBo = in.readInt();
             int caThi = in.readInt();
-            log("📋 Ca thi nhận được: " + caThi);
+            log("📋 Cấu hình nhận được: n=" + soPhong + ", m=" + soCanBo + ", số ca=" + caThi);
 
             // ── Bước 2: Nhận CANBOCOITHI.xlsx ─────────────────────────────
             cmd = in.readInt();
@@ -68,18 +70,33 @@ public class ClientHandler extends Thread {
             log("⚙️  Bắt đầu xử lý phân công ca " + caThi + "...");
 
             // ── Đọc Excel ─────────────────────────────────────────────────
-            List<CanBo>    canBoList  = ExcelReader.readCanBo(canBoFile[1]);
-            List<PhongThi> phongList  = ExcelReader.readPhongThi(phongFile[1]);
+            List<CanBo> allCanBoList = ExcelReader.readCanBo(canBoFile[1]);
+            List<PhongThi> allPhongList = ExcelReader.readPhongThi(phongFile[1]);
 
             log(String.format("   → Cán bộ: %d người | Phòng thi: %d phòng",
-                              canBoList.size(), phongList.size()));
+                              allCanBoList.size(), allPhongList.size()));
 
-            if (phongList.size() < 1000) {
-                log("   ⚠️  Cảnh báo: Ít hơn 1000 phòng thi (đề yêu cầu n ≥ 1000).");
+            if (soPhong <= 0 || soCanBo <= 0 || caThi <= 0) {
+                sendError(out, "Số phòng, số cán bộ và số ca thi phải lớn hơn 0.");
+                return;
             }
-            if (canBoList.size() < phongList.size() * 2) {
-                log("   ⚠️  Cảnh báo: Số cán bộ không đủ cho 2 giám thị/phòng.");
+            if (soPhong > allPhongList.size()) {
+                sendError(out, "File phòng thi chỉ có " + allPhongList.size() + " phòng, không đủ n=" + soPhong + ".");
+                return;
             }
+            if (soCanBo > allCanBoList.size()) {
+                sendError(out, "File cán bộ chỉ có " + allCanBoList.size() + " người, không đủ m=" + soCanBo + ".");
+                return;
+            }
+            if (soCanBo < soPhong * 2) {
+                sendError(out, "m phải lớn hơn hoặc bằng 2 x n để đủ 2 giám thị cho mỗi phòng.");
+                return;
+            }
+
+            List<CanBo> canBoList = new java.util.ArrayList<>(allCanBoList.subList(0, soCanBo));
+            List<PhongThi> phongList = new java.util.ArrayList<>(allPhongList.subList(0, soPhong));
+            log(String.format("   → Sử dụng: %d cán bộ đầu tiên | %d phòng đầu tiên",
+                              canBoList.size(), phongList.size()));
 
             // ── Lưu DB ────────────────────────────────────────────────────
             db.saveCanBoList(canBoList);
@@ -88,23 +105,33 @@ public class ClientHandler extends Thread {
 
             // ── Thuật toán phân công ──────────────────────────────────────
             AssignmentAlgorithm algo   = new AssignmentAlgorithm(db);
-            AssignmentAlgorithm.AssignmentResult result =
-                    algo.assign(canBoList, phongList, caThi);
+            
+            java.util.Map<Integer, List<PhanCongEntry>> phanCongMap = new java.util.LinkedHashMap<>();
+            java.util.Map<Integer, List<GiamSatEntry>> giamSatMap = new java.util.LinkedHashMap<>();
 
-            List<PhanCongEntry> phanCong = result.phanCong;
-            List<GiamSatEntry>  giamSat  = result.giamSat;
+            for (int i = 1; i <= caThi; i++) {
+                log("⚙️  Đang xử lý phân công ca " + i + "...");
+                AssignmentAlgorithm.AssignmentResult result =
+                        algo.assign(canBoList, phongList, i);
 
-            log(String.format("   → Phân công: %d giám thị | Giám sát: %d người",
-                              phanCong.size() / 2, giamSat.size()));
+                List<PhanCongEntry> phanCong = result.phanCong;
+                List<GiamSatEntry>  giamSat  = result.giamSat;
 
-            // ── Lưu kết quả vào DB ────────────────────────────────────────
-            db.savePhanCong(caThi, phanCong);
-            db.saveGiamSat(caThi, giamSat);
+                log(String.format("   → Ca %d - Phân công: %d giám thị | Giám sát: %d người",
+                                  i, phanCong.size() / 2, giamSat.size()));
 
-            // ── Xuất Excel ────────────────────────────────────────────────
-            byte[] phanCongExcel = ExcelWriter.writePhanCong(phanCong, caThi);
-            byte[] giamSatExcel  = ExcelWriter.writeGiamSat(giamSat, caThi);
-            log("   → Đã xuất file Excel kết quả.");
+                // ── Lưu kết quả vào DB ────────────────────────────────────────
+                db.savePhanCong(i, phanCong);
+                db.saveGiamSat(i, giamSat);
+                
+                phanCongMap.put(i, phanCong);
+                giamSatMap.put(i, giamSat);
+            }
+
+            // ── Xuất Excel (Mỗi ca 1 sheet) ─────────────────────────────
+            byte[] phanCongExcel = ExcelWriter.writePhanCong(phanCongMap);
+            byte[] giamSatExcel  = ExcelWriter.writeGiamSat(giamSatMap);
+            log("   → Đã xuất file Excel kết quả chứa " + caThi + " sheet.");
 
             // ── Bước 5+6: Gửi kết quả về Client ──────────────────────────
             out.writeInt(Protocol.CMD_SEND_FILE);
